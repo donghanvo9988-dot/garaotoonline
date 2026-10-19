@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gara Ảo - Phần mềm Quản lý Gara Ô Tô</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js CDN để xử lý giao diện tương tác -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Font Awesome cho biểu tượng -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans" x-data="garageApp()">
+
+    <!-- Header / Navbar -->
+    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-car-rear text-2xl text-blue-400"></i>
+                <h1 class="text-xl font-bold tracking-wide">GARA ẢO — Master Pro</h1>
+            </div>
+            <div class="flex items-center space-x-4 text-sm">
+                <span class="bg-blue-800 px-3 py-1 rounded-full text-blue-200">
+                    <i class="fa-solid fa-user-shield mr-1"></i> Quản trị viên (Admin)
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row gap-6">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 bg-white rounded-xl shadow-sm border border-slate-200 p-4 h-fit">
+            <nav class="space-y-1">
+                <button @click="currentTab = 'dashboard'" :class="{'bg-blue-50 text-blue-700 font-semibold': currentTab === 'dashboard', 'text-slate-600 hover:bg-slate-50': currentTab !== 'dashboard'}" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition text-left">
+                    <i class="fa-solid fa-chart-pie w-5"></i>
+                    <span>Tổng quan</span>
+                </button>
+                <button @click="currentTab = 'customers'" :class="{'bg-blue-50 text-blue-700 font-semibold': currentTab === 'customers', 'text-slate-600 hover:bg-slate-50': currentTab !== 'customers'}" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition text-left">
+                    <i class="fa-solid fa-users w-5"></i>
+                    <span>Khách hàng & Xe</span>
+                </button>
+                <button @click="currentTab = 'orders'" :class="{'bg-blue-50 text-blue-700 font-semibold': currentTab === 'orders', 'text-slate-600 hover:bg-slate-50': currentTab !== 'orders'}" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition text-left">
+                    <i class="fa-solid fa-file-invoice-dollar w-5"></i>
+                    <span>Lệnh sửa chữa & Báo giá</span>
+                </button>
+                <button @click="currentTab = 'inventory'" :class="{'bg-blue-50 text-blue-700 font-semibold': currentTab === 'inventory', 'text-slate-600 hover:bg-slate-50': currentTab !== 'inventory'}" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition text-left">
+                    <i class="fa-solid fa-boxes-stacked w-5"></i>
+                    <span>Kho phụ tùng</span>
+                </button>
+                <button @click="currentTab = 'reports'" :class="{'bg-blue-50 text-blue-700 font-semibold': currentTab === 'reports', 'text-slate-600 hover:bg-slate-50': currentTab !== 'reports'}" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition text-left">
+                    <i class="fa-solid fa-chart-line w-5"></i>
+                    <span>Báo cáo tài chính</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Content Area -->
+        <div class="flex-1">
+
+            <!-- TAB 1: DASHBOARD -->
+            <div x-show="currentTab === 'dashboard'" class="space-y-6">
+                <h2 class="text-2xl font-bold text-slate-800">Tổng quan Gara</h2>
+                
+                <!-- Thống kê nhanh -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-slate-500 text-sm">Xe đang trong gara</div>
+                        <div class="text-3xl font-bold text-blue-600 mt-1" x-text="stats.carsInGarage">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-slate-500 text-sm">Lệnh chờ báo giá/duyệt</div>
+                        <div class="text-3xl font-bold text-amber-600 mt-1" x-text="stats.pendingQuotes">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-slate-500 text-sm">Doanh thu tháng (VND)</div>
+                        <div class="text-2xl font-bold text-emerald-600 mt-1" x-text="formatMoney(stats.revenue)">0</div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                        <div class="text-slate-500 text-sm">Công nợ chưa thu</div>
+                        <div class="text-2xl font-bold text-rose-600 mt-1" x-text="formatMoney(stats.debt)">0</div>
+                    </div>
+                </div>
+
+                <!-- Hoạt động gần đây -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                    <h3 class="text-lg font-semibold mb-4">Lệnh sửa chữa gần nhất</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b text-slate-500">
+                                    <th class="py-2 px-3">Mã lệnh</th>
+                                    <th class="py-2 px-3">Biển số xe</th>
+                                    <th class="py-2 px-3">Khách hàng</th>
+                                    <th class="py-2 px-3">Trạng thái</th>
+                                    <th class="py-2 px-3">Tổng tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="order in orders.slice(0, 5)" :key="order.id">
+                                    <tr class="border-b hover:bg-slate-50">
+                                        <td class="py-3 px-3 font-medium text-blue-600" x-text="order.code"></td>
+                                        <td class="py-3 px-3 font-semibold" x-text="order.plate"></td>
+                                        <td class="py-3 px-3" x-text="order.customerName"></td>
+                                        <td class="py-3 px-3">
+                                            <span class="px-2 py-1 rounded-full text-xs font-medium"
+                                                :class="{
+                                                    'bg-amber-100 text-amber-800': order.status === 'Tiếp nhận',
+                                                    'bg-blue-100 text-blue-800': order.status === 'Đang sửa chữa',
+                                                    'bg-emerald-100 text-emerald-800': order.status === 'Hoàn thành'
+                                                }" x-text="order.status"></span>
+                                        </td>
+                                        <td class="py-3 px-3 font-medium" x-text="formatMoney(order.total)"></td>
+                                    </tr>
+                                </template>
+                                <template x-if="orders.length === 0">
+                                    <tr>
+                                        <td colspan="5" class="py-4 text-center text-slate-400">Chưa có dữ liệu lệnh sửa chữa.</td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: KHÁCH HÀNG & XE -->
+            <div x-show="currentTab === 'customers'" class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-slate-800">Quản lý Khách hàng & Xe</h2>
+                    <button @click="openCustomerModal = true" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Thêm Khách/Xe mới</span>
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-50 border-b text-slate-500">
+                            <tr>
+                                <th class="py-3 px-4">Khách hàng</th>
+                                <th class="py-3 px-4">Số điện thoại</th>
+                                <th class="py-3 px-4">Biển số xe</th>
+                                <th class="py-3 px-4">Hãng / Mẫu xe</th>
+                                <th class="py-3 px-4">Số km</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="item in customers" :key="item.id">
+                                <tr class="border-b hover:bg-slate-50">
+                                    <td class="py-3 px-4 font-medium" x-text="item.name"></td>
+                                    <td class="py-3 px-4 text-slate-600" x-text="item.phone"></td>
+                                    <td class="py-3 px-4 font-bold text-blue-600" x-text="item.plate"></td>
+                                    <td class="py-3 px-4" x-text="item.carModel"></td>
+                                    <td class="py-3 px-4 text-slate-600" x-text="item.km + ' km'"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: LỆNH SỬA CHỮA & BÁO GIÁ -->
+            <div x-show="currentTab === 'orders'" class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-slate-800">Lệnh Sửa Chữa & Báo Giá</h2>
+                    <button @click="openOrderModal = true" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Tạo Lệnh Tiếp Nhận</span>
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-50 border-b text-slate-500">
+                            <tr>
+                                <th class="py-3 px-4">Mã lệnh</th>
+                                <th class="py-3 px-4">Biển số</th>
+                                <th class="py-3 px-4">Khách hàng</th>
+                                <th class="py-3 px-4">Tình trạng tiếp nhận</th>
+                                <th class="py-3 px-4">Trạng thái</th>
+                                <th class="py-3 px-4">Tổng tiền</th>
+                                <th class="py-3 px-4 text-right">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="order in orders" :key="order.id">
+                                <tr class="border-b hover:bg-slate-50">
+                                    <td class="py-3 px-4 font-medium text-blue-600" x-text="order.code"></td>
+                                    <td class="py-3 px-4 font-bold" x-text="order.plate"></td>
+                                    <td class="py-3 px-4" x-text="order.customerName"></td>
+                                    <td class="py-3 px-4 text-slate-600" x-text="order.condition"></td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2.5 py-1 rounded-full text-xs font-medium"
+                                            :class="{
+                                                'bg-amber-100 text-amber-800': order.status === 'Tiếp nhận',
+                                                'bg-blue-100 text-blue-800': order.status === 'Đang sửa chữa',
+                                                'bg-emerald-100 text-emerald-800': order.status === 'Hoàn thành'
+                                            }" x-text="order.status"></span>
+                                    </td>
+                                    <td class="py-3 px-4 font-medium" x-text="formatMoney(order.total)"></td>
+                                    <td class="py-3 px-4 text-right space-x-2">
+                                        <button @click="advanceStatus(order.id)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded transition">
+                                            Chuyển bước
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 4: KHO PHỤ TÙNG -->
+            <div x-show="currentTab === 'inventory'" class="space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-slate-800">Kho Phụ Tùng & Vật Tư</h2>
+                    <button @click="openPartModal = true" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Thêm Phụ Tùng Mới</span>
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-50 border-b text-slate-500">
+                            <tr>
+                                <th class="py-3 px-4">Mã phụ tùng</th>
+                                <th class="py-3 px-4">Tên phụ tùng</th>
+                                <th class="py-3 px-4">Đơn vị tính</th>
+                                <th class="py-3 px-4">Đơn giá (VND)</th>
+                                <th class="py-3 px-4">Tồn kho</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="part in inventory" :key="part.id">
+                                <tr class="border-b hover:bg-slate-50">
+                                    <td class="py-3 px-4 font-medium text-blue-600" x-text="part.code"></td>
+                                    <td class="py-3 px-4 font-semibold" x-text="part.name"></td>
+                                    <td class="py-3 px-4 text-slate-600" x-text="part.unit"></td>
+                                    <td class="py-3 px-4" x-text="formatMoney(part.price)"></td>
+                                    <td class="py-3 px-4 font-bold" :class="part.stock <= 3 ? 'text-rose-600' : 'text-slate-800'" x-text="part.stock"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 5: BÁO CÁO -->
+            <div x-show="currentTab === 'reports'" class="space-y-6">
+                <h2 class="text-2xl font-bold text-slate-800">Báo Cáo Tài Chính & Hoạt Động</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="text-lg font-semibold mb-3 text-slate-700">Tóm tắt Doanh thu</h3>
+                        <p class="text-slate-500 text-sm mb-4">Số liệu được tính từ các lệnh sửa chữa đã hoàn thành và thanh toán.</p>
+                        <div class="text-3xl font-bold text-emerald-600" x-text="formatMoney(stats.revenue)"></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                        <h3 class="text-lg font-semibold mb-3 text-slate-700">Tình trạng Kho hàng</h3>
+                        <p class="text-slate-500 text-sm mb-4">Tổng số chủng loại phụ tùng đang quản lý trong kho chính.</p>
+                        <div class="text-3xl font-bold text-blue-600" x-text="inventory.length + ' loại phụ tùng'"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- MODAL: THÊM KHÁCH HÀNG & XE -->
+    <div x-show="openCustomerModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <h3 class="text-xl font-bold">Thêm Khách Hàng & Xe Mới</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Tên khách hàng</label>
+                    <input type="text" x-model="newCustomer.name" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Số điện thoại</label>
+                    <input type="text" x-model="newCustomer.phone" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Biển số xe</label>
+                    <input type="text" x-model="newCustomer.plate" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Hãng / Mẫu xe</label>
+                    <input type="text" x-model="newCustomer.carModel" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="VD: Toyota Vios 2022">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Số km hiện tại</label>
+                    <input type="number" x-model="newCustomer.km" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 pt-3">
+                <button @click="openCustomerModal = false" class="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100">Hủy</button>
+                <button @click="addCustomer()" class="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700">Lưu hồ sơ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: TẠO LỆNH SỬA CHỮA -->
+    <div x-show="openOrderModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <h3 class="text-xl font-bold">Tiếp Nhận Xe & Tạo Lệnh</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Chọn Khách hàng / Xe</label>
+                    <select x-model="selectedCustomerForOrder" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">-- Chọn xe từ danh sách --</option>
+                        <template x-for="c in customers" :value="c.id">
+                            <option x-text="c.plate + ' - ' + c.name + ' (' + c.carModel + ')'"></option>
+                        </template>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Mô tả tình trạng xe / Yêu cầu</label>
+                    <textarea x-model="newOrderCondition" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" rows="3" placeholder="VD: Bảo dưỡng định kỳ 10,000km, tiếng kêu lạ ở gầm..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Chi phí ước tính (VND)</label>
+                    <input type="number" x-model="newOrderTotal" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="1500000">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 pt-3">
+                <button @click="openOrderModal = false" class="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100">Hủy</button>
+                <button @click="createOrder()" class="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700">Tạo lệnh</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: THÊM PHỤ TÙNG -->
+    <div x-show="openPartModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+            <h3 class="text-xl font-bold">Thêm Phụ Tùng Vào Kho</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Mã phụ tùng</label>
+                    <input type="text" x-model="newPart.code" class="w-full border rounded-lg px-3 py-2 text-sm uppercase" placeholder="VD: LOP-01">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Tên phụ tùng</label>
+                    <input type="text" x-model="newPart.name" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="VD: Lốp Michelin 185/65R15">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Đơn vị tính</label>
+                    <input type="text" x-model="newPart.unit" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Cái / Lít / Bộ">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Đơn giá (VND)</label>
+                    <input type="number" x-model="newPart.price" class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 mb-1">Số lượng tồn kho ban đầu</label>
+                    <input type="number" x-model="newPart.stock" class="w-full border rounded-lg px-3 py-2 text-sm">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 pt-3">
+                <button @click="openPartModal = false" class="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100">Hủy</button>
+                <button @click="addPart()" class="px-4 py-2 rounded-lg text-sm bg-blue-600 text-white hover:bg-blue-700">Lưu phụ tùng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        function garageApp() {
+            return {
+                currentTab: 'dashboard',
+                openCustomerModal: false,
+                openOrderModal: false,
+                openPartModal: false,
+
+                // Dữ liệu mẫu (Sample data được gán nhãn rõ ràng theo nguyên tắc MVP)
+                customers: JSON.parse(localStorage.getItem('garage_customers')) || [
+                    { id: 1, name: 'Nguyễn Văn A', phone: '0901234567', plate: '30A-888.88', carModel: 'Toyota Camry 2021', km: 25000 },
+                    { id: 2, name: 'Trần Thị B', phone: '0987654321', plate: '51G-123.45', carModel: 'Mazda CX-5 2023', km: 12000 }
+                ],
+                orders: JSON.parse(localStorage.getItem('garage_orders')) || [
+                    { id: 1, code: 'LC-001', plate: '30A-888.88', customerName: 'Nguyễn Văn A', condition: 'Bảo dưỡng cấp 20.000km, thay dầu động cơ', status: 'Đang sửa chữa', total: 2500000 },
+                    { id: 2, code: 'LC-002', plate: '51G-123.45', customerName: 'Trần Thị B', condition: 'Kiểm tra hệ thống phanh, tiếng kêu kèn kẹt', status: 'Tiếp nhận', total: 850000 }
+                ],
+                inventory: JSON.parse(localStorage.getItem('garage_inventory')) || [
+                    { id: 1, code: 'OIL-01', name: 'Dầu động cơ Castrol 5W-30', unit: 'Can', price: 450000, stock: 15 },
+                    { id: 2, code: 'LOH-01', name: 'Lọc dầu chính hãng Toyota', unit: 'Cái', price: 180000, stock: 8 },
+                    { id: 3, code: 'BRAKE-01', name: 'Má phanh trước Mazda CX-5', unit: 'Bộ', price: 1200000, stock: 2 }
+                ],
+
+                newCustomer: { name: '', phone: '', plate: '', carModel: '', km: 0 },
+                selectedCustomerForOrder: '',
+                newOrderCondition: '',
+                newOrderTotal: 0,
+                newPart: { code: '', name: '', unit: '', price: 0, stock: 0 },
+
+                get stats() {
+                    let carsInGarage = this.orders.filter(o => o.status !== 'Hoàn thành').length;
+                    let pendingQuotes = this.orders.filter(o => o.status === 'Tiếp nhận').length;
+                    let revenue = this.orders.filter(o => o.status === 'Hoàn thành').reduce((sum, o) => sum + Number(o.total), 0);
+                    let debt = 0; // Công nợ mẫu
+                    return { carsInGarage, pendingQuotes, revenue, debt };
+                },
+
+                formatMoney(amount) {
+                    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+                },
+
+                saveData() {
+                    localStorage.setItem('garage_customers', JSON.stringify(this.customers));
+                    localStorage.setItem('garage_orders', JSON.stringify(this.orders));
+                    localStorage.setItem('garage_inventory', JSON.stringify(this.inventory));
+                },
+
+                addCustomer() {
+                    if (!this.newCustomer.name || !this.newCustomer.plate) {
+                        alert('Vui lòng nhập tên khách hàng và biển số xe!');
+                        return;
+                    }
+                    this.customers.push({ id: Date.now(), ...this.newCustomer });
+                    this.saveData();
+                    this.newCustomer = { name: '', phone: '', plate: '', carModel: '', km: 0 };
+                    this.openCustomerModal = false;
+                },
+
+                createOrder() {
+                    let customer = this.customers.find(c => c.id == this.selectedCustomerForOrder);
+                    if (!customer || !this.newOrderCondition) {
+                        alert('Vui lòng chọn khách hàng và nhập tình trạng xe!');
+                        return;
+                    }
+                    let newCode = 'LC-00' + (this.orders.length + 1);
+                    this.orders.unshift({
+                        id: Date.now(),
+                        code: newCode,
+                        plate: customer.plate,
+                        customerName: customer.name,
+                        condition: this.newOrderCondition,
+                        status: 'Tiếp nhận',
+                        total: Number(this.newOrderTotal) || 0
+                    });
+                    this.saveData();
+                    this.selectedCustomerForOrder = '';
+                    this.newOrderCondition = '';
+                    this.newOrderTotal = 0;
+                    this.openOrderModal = false;
+                },
+
+                advanceStatus(id) {
+                    let order = this.orders.find(o => o.id === id);
+                    if (order) {
+                        if (order.status === 'Tiếp nhận') order.status = 'Đang sửa chữa';
+                        else if (order.status === 'Đang sửa chữa') order.status = 'Hoàn thành';
+                        else if (order.status === 'Hoàn thành') order.status = 'Tiếp nhận';
+                        this.saveData();
+                    }
+                },
+
+                addPart() {
+                    if (!this.newPart.code || !this.newPart.name) {
+                        alert('Vui lòng nhập mã và tên phụ tùng!');
+                        return;
+                    }
+                    this.inventory.push({ id: Date.now(), ...this.newPart });
+                    this.saveData();
+                    this.newPart = { code: '', name: '', unit: '', price: 0, stock: 0 };
+                    this.openPartModal = false;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
